@@ -20,8 +20,8 @@ model_rap = inception_iccv(pretrained=True, num_classes=attr_nums['rap'])
 #     sum([p.data.nelement() for p in model_inception.parameters()])))
 
 # for training on multiple GPUs.
-# model_path = "./models/model/peta_epoch_31.pth.tar"
-model_path = "./models/model/rap_epoch_9.pth.tar"
+# model_path = "weights/peta_epoch_31.pth.tar"
+model_path = "weights/rap_epoch_9.pth.tar"
 # checkpoint = torch.load(model_path, map_location=torch.device('cpu') )
 # start_epoch = checkpoint['epoch']
 # best_accu = checkpoint['best_accu']
