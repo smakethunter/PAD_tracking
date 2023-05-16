@@ -2,3 +2,5 @@ venv
 data
 ALM-pedestrian-attribute
 notebooks
+models/model/peta_epoch_31.pth.tar
+models/model/rap_epoch_9.pth.tar
