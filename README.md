@@ -11,8 +11,10 @@ resnet-50 [pytorch]
   pages={4997--5006},
   year={2019}
 }
+
 PETA model:
 https://drive.google.com/file/d/1cvX43Qn_vydzT_jnmgwYUUe9hIA161PH/view?usp=sharing
+
 RAP model:
 https://drive.google.com/file/d/15paMK0-rKDsuzptDPK5kH2JuL8QO0HyS/view?usp=sharing
 
