@@ -11,7 +11,7 @@ def inception_iccv(pretrained=True, debug=False, **kwargs):
         Initializing with basedline models (trained BN-Inception) can obtain better results.
     """
     if pretrained:
-        pretrained_dict = torch.load('/Users/smaket/PycharmProjects/scientificProject/models/model/peta_epoch_31.pth.tar', map_location=torch.device('cpu') )
+        pretrained_dict = torch.load('/Users/smaket/PycharmProjects/scientificProject/weights/peta_epoch_31.pth.tar', map_location=torch.device('cpu') )
         model_dict = model.state_dict()
         new_dict = {}
         for k,_ in model_dict.items():

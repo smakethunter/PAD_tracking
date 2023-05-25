@@ -1,6 +1,6 @@
 import os
 from typing import List
-
+import csv
 import cv2
 import matplotlib.pyplot as plt
 
@@ -13,7 +13,7 @@ import torch
 global args
 from models.model.datasets import description, attr_nums
 # create model
-model_inception = inception_iccv(pretrained=True, num_classes=35)
+# model_inception = inception_iccv(pretrained=True, num_classes=35)
 model_rap = inception_iccv(pretrained=True, num_classes=attr_nums['rap'])
 # get the number of model parameters
 # print('Number of model parameters: {}'.format(
@@ -74,6 +74,7 @@ class PeopleReIdentificator:
     def _identify(self, frame):
         detections, _ = self.detect(frame)
         is_buffer = len(self._objects_buffer) > 0
+        new_region_proposals = {buff.id:[] for buff in self._objects_buffer}
         for detection in detections:
             input = Image.fromarray(cv2.cvtColor(im[detection[0]:detection[0] + detection[3],
                                                  detection[1]:detection[1] + detection[2]],
@@ -85,7 +86,10 @@ class PeopleReIdentificator:
             if is_buffer:
                 for buff in self._objects_buffer:
                     if buff == detected_object:
-                        buff.bbox = detected_object.bbox
+                        new_region_proposals[buff.id].append([detected_object,
+                                                               objectInfo.bb_intersection_over_union(buff.bbox,
+                                                                                                           detected_object.bbox)])
+                        # buff.bbox = detected_object.bbox
                         buff.repeated = True
                         new_object = False
                         break
@@ -98,8 +102,11 @@ class PeopleReIdentificator:
             if buff.lifetime >= buff.time_to_live:
                 self._objects_buffer.remove(buff)
             if buff.repeated:
-                buff.lifetime = 0
-                buff.repeated = False
+                if len(new_region_proposals[buff.id]):
+                    best_obj = sorted(new_region_proposals[buff.id], key=lambda x: x[1],reverse=True)[0][0]
+                    buff.bbox = best_obj.bbox
+                    buff.lifetime = 0
+                    buff.repeated = False
             else:
                 buff.lifetime += 1
 
@@ -110,21 +117,30 @@ class PeopleReIdentificator:
                           thickness=2)
     def draw_identifications(self, array):
         for obj in self._objects_buffer:
-            detection = obj.bbox
-            cv2.rectangle(array, (detection[1], detection[0]),
-                          (detection[1] + detection[2], detection[0] + detection[3]), color=(0, 255, 0),
-                          thickness=2)
-            cv2.putText(array, f"ID: {obj.id}, Lifetime {obj.lifetime}", (detection[1], detection[0]), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0),
-                        thickness=2)
+            if not obj.lifetime:
+                detection = obj.bbox
+                cv2.rectangle(array, (detection[1], detection[0]),
+                            (detection[1] + detection[2], detection[0] + detection[3]), color=(0, 255, 0),
+                            thickness=2)
+                cv2.putText(array, f"ID: {obj.id}", (detection[1], detection[0]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0),
+                            thickness=2)
+    def detections_to_csv(self, csv_dir, frame_index):
+        fieldnames = ['id','x', 'y', 'w','h']
+        with open(f"{csv_dir}/{frame_index}.csv", "w") as f:
+            dw = csv.DictWriter(f, delimiter=',', fieldnames=fieldnames)
+            dw.writeheader()
+            for obj in self._objects_buffer:
+                dw.writerow(dict(zip(fieldnames,[obj.id, *obj.bbox])))
+
 class objectInfo:
     def __init__(self, id, features, bbox, **kwargs):
         self.id = id
         self.features = features
         self.bbox = bbox
         self.lifetime = 0
-        self.time_to_live = kwargs.get('time_to_live', 3)
-        self.iou_thr = kwargs.get('iou_threshold', 0.8)
-        self.similarity_thr = kwargs.get('similarity_threshold', 0.7)
+        self.time_to_live = kwargs.get('time_to_live', 7)
+        self.iou_thr = kwargs.get('iou_threshold', 0.7)
+        self.similarity_thr = kwargs.get('similarity_threshold', 0.9)
         self.description = description[kwargs.get('dataset', 'rap')]
         self.repeated = False
 
@@ -175,18 +191,49 @@ class objectInfo:
 
 if __name__ == "__main__":
     model = PeopleReIdentificator(None, model_rap, 0.6)
-    for i in range(200, 1, -1):
-        im = cv2.imread('./data/MOT20/test/MOT20-06/img1/{0:06d}.jpg'.format(i))
-        # print('./data/MOT20/test/MOT20-06/img1/{0:06d}.jpg'.format(i))
-        im_out = im.copy()
-        detections, _ = model.detect(im)
-        model.draw_detections(im_out, detections)
-        model._identify(im)
-        # print([(m.id, m.bbox) for m in model._objects_buffer])
-        # print("drawing...")
-        model.draw_identifications(im_out)
-        write_name = './data/MOT20/test/MOT20-06/demo/{0:06d}.jpg'.format(i)
-        cv2.imwrite(write_name, im_out)
+    #exp1
+    # for i in range(200, 1, -1):
+    #     im = cv2.imread('./data/MOT20/test/MOT20-06/img1/{0:06d}.jpg'.format(i))
+    #     # print('./data/MOT20/test/MOT20-06/img1/{0:06d}.jpg'.format(i))
+    #     im_out = im.copy()
+    #     detections, _ = model.detect(im)
+    #     model.draw_detections(im_out, detections)
+    #     model._identify(im)
+    #     # print([(m.id, m.bbox) for m in model._objects_buffer])
+    #     # print("drawing...")
+    #     model.draw_identifications(im_out)
+    #     model.detections_to_csv(csv_dir='./data/MOT20/test/MOT20-06/csv_results',frame_index=i)
+    #     write_name = './data/MOT20/test/MOT20-06/demo/{0:06d}.jpg'.format(i)
+    #     cv2.imwrite(write_name, im_out)
+    #exp2
+    cap = cv2.VideoCapture('data/palace.mp4')
+
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter('data/palace-result.avi', fourcc, 30, (1280,720))
+
+    # Check if camera opened successfully
+    if (cap.isOpened() == False):
+        print("Error opening video stream or file")
+
+    # Read until video is completed
+    i=0
+    while (cap.isOpened()):
+        # Capture frame-by-frame
+        ret, im = cap.read()
+        if ret == True:
+            im_out = im.copy()
+            detections, _ = model.detect(im)
+            # model.draw_detections(im_out, detections)
+            model._identify(im)
+            # print([(m.id, m.bbox) for m in model._objects_buffer])
+            # print("drawing...")
+            model.draw_identifications(im_out)
+            
+            cv2.imwrite(f"data/palace_07_proposals_approach/frame{i}.jpg", im_out)
+            i+=1
+            out.write(im_out)
+    cap.release()
+    out.release()
 
 
 

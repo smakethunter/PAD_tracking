@@ -122,12 +122,12 @@ class PedestrianSensor(object):
                 bbox = [int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])]
                 xywhs.append([bbox[1], bbox[0], bbox[3] - bbox[1], bbox[2] - bbox[0], cls])
 
-        for detection in xywhs:
-            cv2.rectangle(array, (detection[1], detection[0]),
-                          (detection[1] + detection[3], detection[0] + detection[2]), color=(0, 255, 0), thickness=2)
-            cv2.putText(array, detection[4], (detection[1], detection[0]), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0),
-                        thickness=2)
-            cv2.imwrite(f"test{detection[1]}{detection[0]}.jpg", array[detection[0]:detection[0] + detection[2], detection[1]:detection[1] + detection[3]])
+        # for detection in xywhs:
+            # cv2.rectangle(array, (detection[1], detection[0]),
+            #               (detection[1] + detection[3], detection[0] + detection[2]), color=(0, 255, 0), thickness=2)
+            # cv2.putText(array, detection[4], (detection[1], detection[0]), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0),
+            #             thickness=2)
+            # cv2.imwrite(f"test{detection[1]}{detection[0]}.jpg", array[detection[0]:detection[0] + detection[2], detection[1]:detection[1] + detection[3]])
         return [(x,y,h,w) for (x,y,w,h,l) in xywhs], array
 
     def get_prediction(self, img, threshold):
