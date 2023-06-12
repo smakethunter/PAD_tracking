@@ -25,7 +25,7 @@ New detection similar to the objects in buffer is associated with the one of the
 
 Each object with id has it's time_to_live parameter - nr of consecutive frames when object remains undetected but remains in buffer. If time_to_live exceeds threshold (ie 7 frames) the object is discarded from buffer.
 
-![alt text](img/schemat.png)
+![alt text](img/351536192_650015050509123_8926983848831915028_n.png)
 
 ## Test dataset MOT-20
 https://motchallenge.net/data/MOT20.zip
