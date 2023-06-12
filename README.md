@@ -34,4 +34,6 @@ https://motchallenge.net/data/MOT20.zip
 ## Demo
 
 https://drive.google.com/file/d/1GwiPq1vFVhPg2oRNne4NhH47sg5tZ4ER/view?usp=sharing
+![alt text](img/palace-result.gif)
+
 
